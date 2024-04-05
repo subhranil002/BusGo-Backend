@@ -1,0 +1,29 @@
+{
+    "name": "busgo-backend",
+    "version": "1.0.0",
+    "description": "A backend app for BusGo Application",
+    "main": "./src/index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "start": "node ./src/index.js",
+        "dev": "nodemon ./src/index.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/subhranil002/BusGo-Backend.git"
+    },
+    "author": "Subhranil Chakraborty",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/subhranil002/BusGo-Backend/issues"
+    },
+    "homepage": "https://github.com/subhranil002/BusGo-Backend#readme",
+    "dependencies": {
+        "dotenv": "^16.4.5",
+        "express": "^4.19.2"
+    },
+    "devDependencies": {
+        "nodemon": "^3.1.0",
+        "prettier": "^3.2.5"
+    }
+}
