@@ -12,22 +12,26 @@ const userSchema = new mongoose.Schema(
             maxlength: [50, "Name can't be more than 50 characters"],
             minlength: [3, "Name can't be less than 3 characters"]
         },
-        phone: {
+        email: {
             type: String,
-            required: [true, "Phone is required"],
+            required: [true, "Email is required"],
             unique: true,
             trim: true,
-            index: true
+            index: true,
+            lowercase: true,
+            validate: {
+                validator: function (email) {
+                    return /^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/.test(
+                        email
+                    );
+                },
+                message: "Invalid email"
+            }
         },
         password: {
             type: String,
             required: [true, "Password is required"],
             trim: true,
-            select: false
-        },
-        verifiedUser: {
-            type: Boolean,
-            default: false
         },
         avatar: {
             public_id: {
@@ -51,7 +55,6 @@ const userSchema = new mongoose.Schema(
         refreshToken: {
             type: String,
             default: null,
-            select: false
         }
     },
     {
@@ -71,7 +74,7 @@ userSchema.methods = {
         return await bcrypt.compare(password, this.password);
     },
     generateAccessToken: function () {
-        jwt.sign(
+        return jwt.sign(
             {
                 _id: this._id
             },

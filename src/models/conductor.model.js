@@ -12,12 +12,21 @@ const conductorSchema = new mongoose.Schema(
             maxlength: [15, "Bus Number can't be more than 15 characters"],
             minlength: [3, "Bus Number can't be less than 3 characters"]
         },
-        phone: {
+        email: {
             type: String,
-            required: [true, "Phone is required"],
+            required: [true, "Email is required"],
             unique: true,
             trim: true,
-            index: true
+            index: true,
+            lowercase: true,
+            validate: {
+                validator: function (email) {
+                    return /^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/.test(
+                        email
+                    );
+                },
+                message: "Invalid email"
+            }
         },
         password: {
             type: String,
