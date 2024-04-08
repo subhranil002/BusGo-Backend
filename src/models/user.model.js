@@ -10,14 +10,12 @@ const userSchema = new mongoose.Schema(
             required: [true, "Name is required"],
             trim: true,
             maxlength: [50, "Name can't be more than 50 characters"],
-            minlength: [3, "Name can't be less than 3 characters"]
         },
         email: {
             type: String,
             required: [true, "Email is required"],
             unique: true,
             trim: true,
-            index: true,
             lowercase: true,
             validate: {
                 validator: function (email) {
@@ -32,6 +30,7 @@ const userSchema = new mongoose.Schema(
             type: String,
             required: [true, "Password is required"],
             trim: true,
+            minlength: [8, "Password can't be less than 8 characters"],
         },
         avatar: {
             public_id: {

@@ -4,6 +4,8 @@ import morgan from "morgan";
 import cors from "cors";
 import constants from "./constants.js";
 import cookieParser from "cookie-parser";
+import userRouter from "./routes/user.route.js";
+import healthCheckRouter from "./routes/healthCheck.route.js";
 
 const app = express();
 
@@ -22,6 +24,10 @@ app.use(
 app.use(cookieParser());
 app.use(express.static("public"));
 app.use(morgan("dev"));
+
+app.use("/", healthCheckRouter);
+
+app.use("/api/v1/user", userRouter);
 
 app.all("*", (req, res) => {
     res.status(404).json({
