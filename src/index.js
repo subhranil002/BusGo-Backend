@@ -1,6 +1,6 @@
 import app from "./app.js";
 import constants from "./constants.js";
-import connectDB from "./config/db.config.js";
+import connectDB from "./config/mongoDB.config.js";
 import connectCloudinary from "./config/cloudinary.config.js";
 
 connectDB()

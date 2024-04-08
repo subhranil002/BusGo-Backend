@@ -1,12 +1,11 @@
 const errorMiddleware = (err, req, res, next) => {
-    const { statusCode, message, errors, stack } = err;
+    const { statusCode, message, stack } = err;
 
-    console.log("Error: ", err);
+    console.log("ErrorMiddleware: ", err);
 
     res.status(statusCode).json({
         success: false,
         message,
-        errors,
         stack
     });
 };
