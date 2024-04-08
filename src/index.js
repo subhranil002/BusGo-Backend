@@ -7,7 +7,7 @@ connectDB()
     .then(() => {
         connectCloudinary()
             .finally(() => {
-                app.listen(constants.PORT || 3000, async () => {
+                app.listen(constants.PORT || 3500, async () => {
                     console.log(`Server running on port ${constants.PORT}`);
                 });
             })

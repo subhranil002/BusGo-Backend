@@ -16,7 +16,6 @@ const constants = {
     SMTP_PORT: process.env.SMTP_PORT,
     SMTP_USERNAME: process.env.SMTP_USERNAME,
     SMTP_PASSWORD: process.env.SMTP_PASSWORD,
-    SMTP_FROM_EMAIL: process.env.SMTP_FROM_EMAIL
 };
 
 export default constants;

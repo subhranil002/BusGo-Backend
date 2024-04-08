@@ -25,7 +25,7 @@ app.use(cookieParser());
 app.use(express.static("public"));
 app.use(morgan("dev"));
 
-app.use("/", healthCheckRouter);
+app.use("/api/v1/healthcheck", healthCheckRouter);
 
 app.use("/api/v1/user", userRouter);
 
