@@ -1,6 +1,7 @@
 import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
 
+// Delete local files
 export const deleteLocalFiles = filePaths => {
     try {
         if (filePaths && filePaths.length > 0) {
@@ -16,9 +17,11 @@ export const deleteLocalFiles = filePaths => {
 };
 
 export const uploadImage = async (localFilePath) => {
+    // Check if localFilePath is empty
     if (localFilePath == "") return null;
 
     try {
+        // Upload image
         const response = await cloudinary.uploader.upload(localFilePath, {
             resource_type: "image",
             folder: "BusGo-Backend",
@@ -32,8 +35,10 @@ export const uploadImage = async (localFilePath) => {
             ]
         });
 
+        // Delete local files
         deleteLocalFiles([localFilePath]);
 
+        // Return public_id and secure_url
         return {
             public_id: response.public_id,
             secure_url: response.secure_url
@@ -46,8 +51,10 @@ export const uploadImage = async (localFilePath) => {
 
 export const deleteImage = async publicId => {
     try {
+        // Check if publicId is empty
         if (publicId == "") return false;
 
+        // Delete image from Cloudinary
         await cloudinary.uploader.destroy(publicId);
 
         return true;

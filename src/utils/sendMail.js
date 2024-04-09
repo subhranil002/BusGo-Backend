@@ -1,6 +1,8 @@
 import ApiError from "./ApiError.js";
 import smtpTransport from "../config/smtp.config.js";
+import constants from "../constants.js";
 
+// Validate email
 export const validateEmail = email => {
     const isValidEmail = /^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/;
     return isValidEmail.test(email);
@@ -8,6 +10,7 @@ export const validateEmail = email => {
 
 export const sendEmail = async (email, otp) => {
     try {
+        // Verify connection
         await new Promise((resolve, reject) => {
             smtpTransport.verify((error, success) => {
                 if (error) {
@@ -18,12 +21,15 @@ export const sendEmail = async (email, otp) => {
             });
         });
 
+        // Send email
         const response = await smtpTransport.sendMail({
+            from: `BusGo <${constants.SMTP_USERNAME}>`,
             to: email,
             subject: "BusGo - OTP",
             html: `<h1>Your OTP for BusGo is ${otp}</h1>`
         });
 
+        // return boolean value
         return response.accepted.length > 0 ? true : false;
     } catch (error) {
         throw new ApiError(error, 500);

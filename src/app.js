@@ -9,6 +9,7 @@ import healthCheckRouter from "./routes/healthCheck.route.js";
 
 const app = express();
 
+// Middleware
 app.use(express.json());
 app.use(
     express.urlencoded({
@@ -25,10 +26,11 @@ app.use(cookieParser());
 app.use(express.static("public"));
 app.use(morgan("dev"));
 
+// Routes
 app.use("/api/v1/healthcheck", healthCheckRouter);
-
 app.use("/api/v1/user", userRouter);
 
+// Handle 404 errors
 app.all("*", (req, res) => {
     res.status(404).json({
         success: false,
@@ -36,6 +38,7 @@ app.all("*", (req, res) => {
     });
 });
 
+// Error handling middleware
 app.use(errorMiddleware);
 
 export default app;
