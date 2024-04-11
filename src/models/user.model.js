@@ -35,7 +35,7 @@ const userSchema = new mongoose.Schema(
         avatar: {
             public_id: {
                 type: String,
-                default: null,
+                default: "",
                 trim: true
             },
             secure_url: {

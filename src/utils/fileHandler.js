@@ -16,7 +16,7 @@ export const deleteLocalFiles = filePaths => {
     }
 };
 
-export const uploadImage = async (localFilePath) => {
+export const uploadImage = async localFilePath => {
     // Check if localFilePath is empty
     if (localFilePath == "") return null;
 
@@ -52,7 +52,7 @@ export const uploadImage = async (localFilePath) => {
 export const deleteImage = async publicId => {
     try {
         // Check if publicId is empty
-        if (publicId == "") return false;
+        if (publicId == "") return true;
 
         // Delete image from Cloudinary
         await cloudinary.uploader.destroy(publicId);
