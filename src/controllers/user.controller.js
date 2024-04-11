@@ -5,6 +5,11 @@ import asyncHandler from "../utils/asyncHandler.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import { sendEmail, validateEmail } from "../utils/sendMail.js";
 import generateAccessAndRefreshToken from "../utils/generateTokens.js";
+import {
+    deleteLocalFiles,
+    uploadImage,
+    deleteImage
+} from "../utils/fileHandler.js";
 
 export const sendOTP = asyncHandler(async (req, res, next) => {
     try {
@@ -173,9 +178,7 @@ export const logout = asyncHandler(async (req, res, next) => {
             .clearCookie("refreshToken")
             .json(new ApiResponse("Logout successful", {}));
     } catch (error) {
-        return next(
-            new ApiError(`user.controller :: logout :: ${error}`, 500)
-        );
+        return next(new ApiError(`user.controller :: logout :: ${error}`, 500));
     }
 });
 
@@ -189,7 +192,7 @@ export const getCurrentUser = asyncHandler(async (req, res, next) => {
 
         // Get user details
         const user = await User.findById(userId).select(
-            "_id name email avatar"
+            "_id name email avatar refreshToken"
         );
 
         // Check if user exists
@@ -197,13 +200,158 @@ export const getCurrentUser = asyncHandler(async (req, res, next) => {
             throw new ApiError("User not found", 404);
         }
 
+        // Generate access and refresh token
+        const { accessToken, refreshToken } =
+            await generateAccessAndRefreshToken(user);
+        user.refreshToken = undefined;
+
+        // Cookie options
+        const cookieOptions = {
+            httpOnly: true,
+            secure: true
+        };
+
         // Send response
         return res
             .status(200)
+            .cookie("accessToken", accessToken, cookieOptions)
+            .cookie("refreshToken", refreshToken, cookieOptions)
             .json(new ApiResponse("Profile fetched successfully", user));
     } catch (error) {
         return next(
             new ApiError(`user.controller :: getProfile :: ${error}`, 500)
+        );
+    }
+});
+
+export const changeAvatar = asyncHandler(async (req, res, next) => {
+    try {
+        // Get avatar file from request
+        const avatarLocalPath = req.file ? req.file.path : "";
+
+        // Check if avatar file is empty
+        if (!avatarLocalPath) {
+            deleteLocalFiles([avatarLocalPath]);
+            throw new ApiError("No avatar file provided", 400);
+        }
+
+        // Find current user
+        const user = await User.findById(req.user._id).select("avatar");
+        if (!user) {
+            deleteLocalFiles([avatarLocalPath]);
+            throw new ApiError("Unauthorized request, please login again", 401);
+        }
+
+        // Upload avatar to Cloudinary
+        const newAvatar = await uploadImage(avatarLocalPath);
+        if (!newAvatar.public_id || !newAvatar.secure_url) {
+            deleteLocalFiles([avatarLocalPath]);
+            throw new ApiError("Error uploading avatar", 400);
+        }
+
+        // Delete old avatar
+        const result = await deleteImage(user.avatar.public_id);
+        if (!result) {
+            deleteImage(newAvatar.public_id);
+            throw new ApiError("Error deleting old avatar", 400);
+        }
+
+        // Update user with new avatar
+        const updatedUser = await User.findByIdAndUpdate(
+            req.user._id,
+            {
+                avatar: {
+                    public_id: newAvatar.public_id,
+                    secure_url: newAvatar.secure_url
+                }
+            },
+            { new: true }
+        ).select("_id name email avatar");
+
+        // Return updated user
+        return res
+            .status(200)
+            .json(new ApiResponse("Avatar changed successfully", updatedUser));
+    } catch (error) {
+        return next(
+            new ApiError(`user.controller :: changeAvatar :: ${error}`, 500)
+        );
+    }
+});
+
+export const changePassword = asyncHandler(async (req, res, next) => {
+    try {
+        // Get old and new password from request
+        const { oldPassword, newPassword } = req.body;
+
+        // Check if any of the fields is empty
+        if (!oldPassword || !newPassword) {
+            throw new ApiError("All fields are required", 400);
+        }
+
+        // Validate password
+        if (oldPassword.length < 8 || newPassword.length < 8) {
+            throw new ApiError("Password must be at least 8 characters", 400);
+        }
+
+        // Find current user
+        const user = await User.findById(req.user._id).select("password");
+        if (!user) {
+            throw new ApiError("Unauthorized request, please login again", 401);
+        }
+
+        // Check if old password is correct
+        if (!(await user.isPasswordCorrect(oldPassword))) {
+            throw new ApiError("Old password is incorrect", 400);
+        }
+
+        // Update user password
+        user.password = newPassword;
+        await user.save();
+
+        // Send response
+        return res
+            .status(200)
+            .json(new ApiResponse("Password changed successfully", {}));
+    } catch (error) {
+        return next(
+            new ApiError(`user.controller :: changePassword :: ${error}`, 500)
+        );
+    }
+});
+
+export const updateProfile = asyncHandler(async (req, res, next) => {
+    try {
+        // Get details from request
+        const { name } = req.body;
+
+        // Check if the field is empty
+        if (!name) {
+            throw new ApiError("All fields are required", 400);
+        }
+
+        // Find current user
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            throw new ApiError("Unauthorized request, please login again", 401);
+        }
+
+        // Update user details
+        const updatedUser = await User.findByIdAndUpdate(
+            req.user._id,
+            {
+                name
+            },
+            { new: true }
+        ).select("_id name email avatar");
+
+        // Send response
+        return res
+            .status(200)
+            .json(new ApiResponse("Profile updated successfully", updatedUser));
+    } catch (error) {
+        return next(
+            new ApiError(`user.controller :: updateProfile :: ${error}`, 500)
         );
     }
 });
