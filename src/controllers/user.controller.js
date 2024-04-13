@@ -60,11 +60,19 @@ export const sendOTP = asyncHandler(async (req, res, next) => {
 export const register = asyncHandler(async (req, res, next) => {
     try {
         // Get user details
-        const { name, email, otp, password } = req.body;
+        const { name, email, otp, password, busNumber, routeID, role } =
+            req.body;
 
         // Validate input fields
         if (!name || !email || !otp || !password) {
             throw new ApiError("All fields are required", 400);
+        }
+
+        // Validate role
+        if (role && role !== "CONDUCTOR" && role !== "USER" && role !== "ADMIN") {
+            throw new ApiError("Invalid role", 400);
+        } else if (role === "ADMIN") {
+            throw new ApiError("Admin cannot register", 400);
         }
 
         // Validate email
@@ -92,7 +100,19 @@ export const register = asyncHandler(async (req, res, next) => {
         }
 
         // Create user
-        const newUser = await User.create({ name, email, password });
+        const newUser = await User.create({
+            name,
+            email,
+            password,
+        });
+
+        // Check if conductor
+        if (role === "CONDUCTOR") {
+            newUser.busNumber = busNumber;
+            newUser.routeID = routeID;
+            newUser.role = role;
+        }
+        await newUser.save();
 
         // Check if user created
         const createdUser = await User.findById(newUser._id);
@@ -184,21 +204,10 @@ export const logout = asyncHandler(async (req, res, next) => {
 
 export const getCurrentUser = asyncHandler(async (req, res, next) => {
     try {
-        // Get user id from cookie
-        const userId = req.user._id;
-        if (!userId) {
-            throw new ApiError("Unauthorized request, please login again", 401);
-        }
-
         // Get user details
-        const user = await User.findById(userId).select(
-            "_id name email avatar refreshToken"
+        const user = await User.findById(req.user._id).select(
+            "-password -bookingHistory -sellingHistory -refreshToken"
         );
-
-        // Check if user exists
-        if (!user) {
-            throw new ApiError("User not found", 404);
-        }
 
         // Generate access and refresh token
         const { accessToken, refreshToken } =
@@ -257,7 +266,7 @@ export const changeAvatar = asyncHandler(async (req, res, next) => {
         }
 
         // Update user with new avatar
-        const updatedUser = await User.findByIdAndUpdate(
+        const updatedAvatar = await User.findByIdAndUpdate(
             req.user._id,
             {
                 avatar: {
@@ -266,12 +275,14 @@ export const changeAvatar = asyncHandler(async (req, res, next) => {
                 }
             },
             { new: true }
-        ).select("_id name email avatar");
+        ).select("avatar");
 
         // Return updated user
         return res
             .status(200)
-            .json(new ApiResponse("Avatar changed successfully", updatedUser));
+            .json(
+                new ApiResponse("Avatar changed successfully", updatedAvatar)
+            );
     } catch (error) {
         return next(
             new ApiError(`user.controller :: changeAvatar :: ${error}`, 500)
@@ -325,30 +336,19 @@ export const updateProfile = asyncHandler(async (req, res, next) => {
         // Get details from request
         const { name } = req.body;
 
-        // Check if the field is empty
-        if (!name) {
-            throw new ApiError("All fields are required", 400);
-        }
-
-        // Find current user
-        const user = await User.findById(req.user._id);
-        if (!user) {
-            throw new ApiError("Unauthorized request, please login again", 401);
-        }
-
         // Update user details
-        const updatedUser = await User.findByIdAndUpdate(
+        await User.findByIdAndUpdate(
             req.user._id,
             {
                 name
             },
             { new: true }
-        ).select("_id name email avatar");
+        );
 
         // Send response
         return res
             .status(200)
-            .json(new ApiResponse("Profile updated successfully", updatedUser));
+            .json(new ApiResponse("Profile updated successfully", {}));
     } catch (error) {
         return next(
             new ApiError(`user.controller :: updateProfile :: ${error}`, 500)

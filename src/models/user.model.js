@@ -45,7 +45,31 @@ const userSchema = new mongoose.Schema(
                 trim: true
             }
         },
+        busNumber: {
+            type: String,
+            trim: true,
+            minlength: [3, "Bus Number can't be less than 3 characters"],
+            maxlength: [15, "Bus Number can't be more than 15 characters"]
+        },
+        routeID: {
+            type: String,
+            trim: true,
+            minlength: [2, "Route ID can't be less than 2 characters"],
+            maxlength: [15, "Route ID can't be more than 15 characters"]
+        },
+        role: {
+            type: String,
+            required: [true, "Role is required"],
+            enum: ["CONDUCTOR", "USER", "ADMIN"],
+            default: "USER"
+        },
         bookingHistory: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "Booking"
+            }
+        ],
+        sellingHistory: [
             {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: "Booking"
@@ -79,7 +103,8 @@ userSchema.methods = {
     generateAccessToken: function () {
         return jwt.sign(
             {
-                _id: this._id
+                _id: this._id,
+                role: this.role
             },
             constants.ACCESS_TOKEN_SECRET,
             {
