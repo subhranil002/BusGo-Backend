@@ -5,6 +5,7 @@ import {
     getCurrentUser,
     login,
     logout,
+    refreshAccessToken,
     register,
     sendOTP,
     updateProfile
@@ -25,5 +26,6 @@ userRouter
     .put(upload.single("avatar"), isLoggedIn, changeAvatar);
 userRouter.route("/change-password").put(isLoggedIn, changePassword);
 userRouter.route("/update-profile").put(isLoggedIn, updateProfile);
+userRouter.route("/refresh-token").get(refreshAccessToken);
 
 export default userRouter;

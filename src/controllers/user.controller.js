@@ -10,6 +10,8 @@ import {
     uploadImage,
     deleteImage
 } from "../utils/fileHandler.js";
+import jwt from "jsonwebtoken";
+import constants from "../constants.js";
 
 export const sendOTP = asyncHandler(async (req, res, next) => {
     try {
@@ -69,7 +71,12 @@ export const register = asyncHandler(async (req, res, next) => {
         }
 
         // Validate role
-        if (role && role !== "CONDUCTOR" && role !== "USER" && role !== "ADMIN") {
+        if (
+            role &&
+            role !== "CONDUCTOR" &&
+            role !== "USER" &&
+            role !== "ADMIN"
+        ) {
             throw new ApiError("Invalid role", 400);
         } else if (role === "ADMIN") {
             throw new ApiError("Admin cannot register", 400);
@@ -103,7 +110,7 @@ export const register = asyncHandler(async (req, res, next) => {
         const newUser = await User.create({
             name,
             email,
-            password,
+            password
         });
 
         // Check if conductor
@@ -191,6 +198,13 @@ export const login = asyncHandler(async (req, res, next) => {
 
 export const logout = asyncHandler(async (req, res, next) => {
     try {
+        // Clear refresh token from database
+        await User.findByIdAndUpdate(req.user._id, {
+            $unset: {
+                refreshToken: 1
+            }
+        });
+
         // Clear cookies
         return res
             .status(200)
@@ -352,6 +366,57 @@ export const updateProfile = asyncHandler(async (req, res, next) => {
     } catch (error) {
         return next(
             new ApiError(`user.controller :: updateProfile :: ${error}`, 500)
+        );
+    }
+});
+
+export const refreshAccessToken = asyncHandler(async (req, res, next) => {
+    try {
+        // Get refresh token from cookie
+        const oldRefreshToken = req.cookies?.refreshToken;
+        if (!oldRefreshToken) {
+            throw new ApiError("Unauthorized request, please login again", 401);
+        }
+
+        // Check if refresh token is valid
+        const decodedToken = jwt.verify(
+            oldRefreshToken,
+            constants.REFRESH_TOKEN_SECRET
+        );
+        if (!decodedToken?._id) {
+            throw new ApiError("User not found", 401);
+        }
+
+        // Get refresh token from database
+        const user = await User.findById(decodedToken._id).select(
+            "_id role refreshToken"
+        );
+
+        // Check if refresh token matches with database
+        if (user.refreshToken !== oldRefreshToken) {
+            throw new ApiError("Invalid token", 401);
+        }
+
+        // Generate new tokens
+        const { accessToken, refreshToken } =
+            await generateAccessAndRefreshToken(user);
+        const cookieOptions = {
+            httpOnly: true,
+            secure: true
+        };
+
+        // Send response
+        return res
+            .status(200)
+            .cookie("accessToken", accessToken, cookieOptions)
+            .cookie("refreshToken", refreshToken, cookieOptions)
+            .json(new ApiResponse("Access token refreshed successfully", {}));
+    } catch (error) {
+        return next(
+            new ApiError(
+                `user.controller :: refreshAccessToken :: ${error}`,
+                500
+            )
         );
     }
 });
