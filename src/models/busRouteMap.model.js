@@ -5,8 +5,8 @@ const busRouteMapSchema = new mongoose.Schema({
         type: String,
         required: [true, "Route ID is required"],
         trim: true,
-        minlength: [3, "Bus Number can't be less than 3 characters"],
-        maxlength: [15, "Bus Number can't be more than 15 characters"]
+        minlength: [2, "Route ID can't be less than 3 characters"],
+        maxlength: [10, "Route ID can't be more than 15 characters"]
     },
     origin: {
         type: String,

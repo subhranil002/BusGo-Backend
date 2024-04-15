@@ -8,7 +8,7 @@ export const validateEmail = email => {
     return isValidEmail.test(email);
 };
 
-export const sendEmail = async (email, otp) => {
+export const sendEmail = async (email, subject, html) => {
     try {
         // Verify connection
         await new Promise((resolve, reject) => {
@@ -25,8 +25,8 @@ export const sendEmail = async (email, otp) => {
         const response = await smtpTransport.sendMail({
             from: `BusGo <${constants.SMTP_USERNAME}>`,
             to: email,
-            subject: "BusGo - OTP",
-            html: `<h1>Your OTP for BusGo is ${otp}</h1>`
+            subject: subject,
+            html: html
         });
 
         // return boolean value

@@ -41,7 +41,16 @@ export const sendOTP = asyncHandler(async (req, res, next) => {
         await Otp.findOneAndUpdate({ email }, { email, otp }, { upsert: true });
 
         // Send OTP
-        const response = await sendEmail(email, otp);
+        const subject = `Your OTP for BusGo - ${otp} `;
+        const html = `
+            <h4>Dear User,</h4>
+            <p>Your OTP for BusGo is <strong style="color: #007bff;">${otp}</strong></p>
+            <p>Please use this OTP to complete your registration on BusGo. Please note that this OTP is valid for a single use and should not be shared with anyone else.</p>
+            <p>If you did not request this OTP or have any concerns about the security of your account, please reach out to our support team immediately at busgo.project@gmail.com</p>
+            <p>Thank you for choosing BusGo.</p>
+            <p>Best regards,<br/>BusGo Team</p>
+        `;
+        const response = await sendEmail(email, subject, html);
 
         // If OTP not sent
         if (!response) {
@@ -74,7 +83,7 @@ export const register = asyncHandler(async (req, res, next) => {
         if (
             role &&
             role !== "CONDUCTOR" &&
-            role !== "USER" &&
+            role !== "PASSENGER" &&
             role !== "ADMIN"
         ) {
             throw new ApiError("Invalid role", 400);
