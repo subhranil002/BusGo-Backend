@@ -1,4 +1,6 @@
 import multer from "multer";
+import path from "path";
+import ApiError from "../utils/ApiError.js";
 
 // Storage configuration
 const storage = multer.diskStorage({
@@ -10,6 +12,27 @@ const storage = multer.diskStorage({
     }
 });
 
-const upload = multer({ storage });
+// File type validation function
+const fileFilter = (_req, file, cb) => {
+    let ext = path.extname(file.originalname);
 
+    if (
+        ext !== ".jpg" &&
+        ext !== ".jpeg" &&
+        ext !== ".webp" &&
+        ext !== ".png"
+    ) {
+        cb(
+            new ApiError(
+                "Invalid file type, only jpg, jpeg, png and webp are allowed",
+                400
+            )
+        );
+        return;
+    }
+
+    cb(null, true);
+};
+
+const upload = multer({ storage, fileFilter });
 export default upload;
