@@ -63,7 +63,10 @@ export const sendOTP = asyncHandler(async (req, res, next) => {
             .json(new ApiResponse("OTP sent successfully", {}));
     } catch (error) {
         return next(
-            new ApiError(`user.controller :: sendOTP :: ${error}`, 500)
+            new ApiError(
+                `user.controller :: sendOTP :: ${error}`,
+                error.statusCode
+            )
         );
     }
 });
@@ -147,7 +150,10 @@ export const register = asyncHandler(async (req, res, next) => {
             );
     } catch (error) {
         return next(
-            new ApiError(`user.controller :: register :: ${error}`, 500)
+            new ApiError(
+                `user.controller :: register :: ${error}`,
+                error.statusCode
+            )
         );
     }
 });
@@ -201,7 +207,12 @@ export const login = asyncHandler(async (req, res, next) => {
             .cookie("refreshToken", refreshToken, cookieOptions)
             .json(new ApiResponse("Login successful", {}));
     } catch (error) {
-        return next(new ApiError(`user.controller :: login :: ${error}`, 500));
+        return next(
+            new ApiError(
+                `user.controller :: login :: ${error}`,
+                error.statusCode
+            )
+        );
     }
 });
 
@@ -221,7 +232,12 @@ export const logout = asyncHandler(async (req, res, next) => {
             .clearCookie("refreshToken")
             .json(new ApiResponse("Logout successful", {}));
     } catch (error) {
-        return next(new ApiError(`user.controller :: logout :: ${error}`, 500));
+        return next(
+            new ApiError(
+                `user.controller :: logout :: ${error}`,
+                error.statusCode
+            )
+        );
     }
 });
 
@@ -251,7 +267,10 @@ export const getCurrentUser = asyncHandler(async (req, res, next) => {
             .json(new ApiResponse("Profile fetched successfully", user));
     } catch (error) {
         return next(
-            new ApiError(`user.controller :: getProfile :: ${error}`, 500)
+            new ApiError(
+                `user.controller :: getProfile :: ${error}`,
+                error.statusCode
+            )
         );
     }
 });
@@ -308,7 +327,10 @@ export const changeAvatar = asyncHandler(async (req, res, next) => {
             );
     } catch (error) {
         return next(
-            new ApiError(`user.controller :: changeAvatar :: ${error}`, 500)
+            new ApiError(
+                `user.controller :: changeAvatar :: ${error}`,
+                error.statusCode
+            )
         );
     }
 });
@@ -349,7 +371,10 @@ export const changePassword = asyncHandler(async (req, res, next) => {
             .json(new ApiResponse("Password changed successfully", {}));
     } catch (error) {
         return next(
-            new ApiError(`user.controller :: changePassword :: ${error}`, 500)
+            new ApiError(
+                `user.controller :: changePassword :: ${error}`,
+                error.statusCode
+            )
         );
     }
 });
@@ -374,7 +399,10 @@ export const updateProfile = asyncHandler(async (req, res, next) => {
             .json(new ApiResponse("Profile updated successfully", {}));
     } catch (error) {
         return next(
-            new ApiError(`user.controller :: updateProfile :: ${error}`, 500)
+            new ApiError(
+                `user.controller :: updateProfile :: ${error}`,
+                error.statusCode
+            )
         );
     }
 });
@@ -424,7 +452,7 @@ export const refreshAccessToken = asyncHandler(async (req, res, next) => {
         return next(
             new ApiError(
                 `user.controller :: refreshAccessToken :: ${error}`,
-                500
+                error.statusCode
             )
         );
     }

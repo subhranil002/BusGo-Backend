@@ -11,12 +11,15 @@ export const isLoggedIn = asyncHandler(async (req, res, next) => {
         const accessToken = req.cookies?.accessToken;
 
         // Validate access token
-        if (!accessToken ) {
+        if (!accessToken) {
             throw new ApiError("Unauthorized request, please login again", 401);
         }
 
         // Verify access token
-        const decodedToken = jwt.verify(accessToken, constants.ACCESS_TOKEN_SECRET);
+        const decodedToken = jwt.verify(
+            accessToken,
+            constants.ACCESS_TOKEN_SECRET
+        );
         if (!decodedToken?._id) {
             throw new ApiError("Unauthorized request, please login again", 401);
         }
@@ -34,7 +37,10 @@ export const isLoggedIn = asyncHandler(async (req, res, next) => {
         next();
     } catch (error) {
         return next(
-            new ApiError(`auth.middleware :: isLoggedIn :: ${error}`, 500)
+            new ApiError(
+                `auth.middleware :: isLoggedIn :: ${error}`,
+                error.statusCode
+            )
         );
     }
 });

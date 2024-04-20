@@ -87,7 +87,10 @@ export const createBooking = asyncHandler(async (req, res, next) => {
             .json(new ApiResponse("Booking created successfully", booking));
     } catch (error) {
         return next(
-            new ApiError(`booking.controller :: createBooking :: ${error}`, 500)
+            new ApiError(
+                `booking.controller :: createBooking :: ${error}`,
+                error.statusCode
+            )
         );
     }
 });
