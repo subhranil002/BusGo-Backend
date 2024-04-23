@@ -179,20 +179,20 @@ export const login = asyncHandler(async (req, res, next) => {
         }
 
         // Check if user exists
-        const isExists = await User.findOne({ email });
-        if (!isExists) {
+        const user = await User.findOne({ email });
+        if (!user) {
             throw new ApiError("Invalid email or password", 404);
         }
 
         // Check if password is correct
-        const isPasswordCorrect = await isExists.isPasswordCorrect(password);
+        const isPasswordCorrect = await user.isPasswordCorrect(password);
         if (!isPasswordCorrect) {
             throw new ApiError("Invalid email or password", 400);
         }
 
         // Generate access and refresh token
         const { accessToken, refreshToken } =
-            await generateAccessAndRefreshToken(isExists);
+            await generateAccessAndRefreshToken(user);
 
         // Cookie options
         const cookieOptions = {
@@ -248,27 +248,14 @@ export const getCurrentUser = asyncHandler(async (req, res, next) => {
             "-password -bookingHistory -sellingHistory -refreshToken"
         );
 
-        // Generate access and refresh token
-        const { accessToken, refreshToken } =
-            await generateAccessAndRefreshToken(user);
-        user.refreshToken = undefined;
-
-        // Cookie options
-        const cookieOptions = {
-            httpOnly: true,
-            secure: true
-        };
-
         // Send response
         return res
             .status(200)
-            .cookie("accessToken", accessToken, cookieOptions)
-            .cookie("refreshToken", refreshToken, cookieOptions)
             .json(new ApiResponse("Profile fetched successfully", user));
     } catch (error) {
         return next(
             new ApiError(
-                `user.controller :: getProfile :: ${error}`,
+                `user.controller :: getCurrentUser :: ${error}`,
                 error.statusCode
             )
         );
@@ -452,6 +439,36 @@ export const refreshAccessToken = asyncHandler(async (req, res, next) => {
         return next(
             new ApiError(
                 `user.controller :: refreshAccessToken :: ${error}`,
+                error.statusCode
+            )
+        );
+    }
+});
+
+export const deleteUser = asyncHandler(async (req, res, next) => {
+    try {
+        // Get user from request
+        const user = await User.findById(req.user._id);
+
+        // Delete user's avatar
+        const result = await deleteImage(user.avatar.public_id);
+        if (!result) {
+            throw new ApiError("Error deleting avatar", 400);
+        }
+
+        // Delete user
+        await User.findByIdAndDelete(user._id);
+
+        // Send response
+        return res
+            .status(200)
+            .clearCookie("accessToken")
+            .clearCookie("refreshToken")
+            .json(new ApiResponse("User deleted successfully", {}));
+    } catch (error) {
+        return next(
+            new ApiError(
+                `user.controller :: deleteUser :: ${error}`,
                 error.statusCode
             )
         );
