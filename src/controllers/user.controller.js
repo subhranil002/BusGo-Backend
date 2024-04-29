@@ -205,7 +205,12 @@ export const login = asyncHandler(async (req, res, next) => {
             .status(200)
             .cookie("accessToken", accessToken, cookieOptions)
             .cookie("refreshToken", refreshToken, cookieOptions)
-            .json(new ApiResponse("Login successful", {}));
+            .json(
+                new ApiResponse("Login successful", {
+                    accessToken,
+                    refreshToken
+                })
+            );
     } catch (error) {
         return next(
             new ApiError(
@@ -434,7 +439,10 @@ export const refreshAccessToken = asyncHandler(async (req, res, next) => {
             .status(200)
             .cookie("accessToken", accessToken, cookieOptions)
             .cookie("refreshToken", refreshToken, cookieOptions)
-            .json(new ApiResponse("Access token refreshed successfully", {}));
+            .json(new ApiResponse("Access token refreshed successfully", {
+                accessToken,
+                refreshToken
+            }));
     } catch (error) {
         return next(
             new ApiError(

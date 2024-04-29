@@ -7,8 +7,11 @@ import { User } from "../models/user.model.js";
 // Middleware to check if user is logged in
 export const isLoggedIn = asyncHandler(async (req, res, next) => {
     try {
-        // Get access token
-        const accessToken = req.cookies?.accessToken;
+        // Retrieve access token from cookies or authorization header
+        const authorizationHeader = req.headers?.authorization;
+        const accessToken =
+            req.cookies?.accessToken ||
+            (authorizationHeader ? authorizationHeader.split(" ")[1] : null);
 
         // Validate access token
         if (!accessToken) {
@@ -16,12 +19,17 @@ export const isLoggedIn = asyncHandler(async (req, res, next) => {
         }
 
         // Verify access token
-        const decodedToken = jwt.verify(
-            accessToken,
-            constants.ACCESS_TOKEN_SECRET
-        );
-        if (!decodedToken?._id) {
-            throw new ApiError("Unauthorized request, please login again", 401);
+        let decodedToken;
+        try {
+            decodedToken = jwt.verify(
+                accessToken,
+                constants.ACCESS_TOKEN_SECRET
+            );
+            if (!decodedToken?._id) {
+                throw new ApiError("Invalid or expired access token", 401);
+            }
+        } catch (error) {
+            throw new ApiError("Invalid or expired access token", 401);
         }
 
         // Find user by id
