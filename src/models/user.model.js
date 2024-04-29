@@ -60,8 +60,8 @@ const userSchema = new mongoose.Schema(
         role: {
             type: String,
             required: [true, "Role is required"],
-            enum: ["CONDUCTOR", "PASSENGER", "ADMIN"],
-            default: "PASSENGER"
+            enum: ["conductor", "passenger", "admin"],
+            default: "passenger"
         },
         bookingHistory: [
             {
