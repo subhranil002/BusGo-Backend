@@ -4,10 +4,11 @@ import morgan from "morgan";
 import cors from "cors";
 import constants from "./constants.js";
 import cookieParser from "cookie-parser";
-import userRouter from "./routes/user.route.js";
-import healthCheckRouter from "./routes/healthCheck.route.js";
-import bookingRouter from "./routes/booking.route.js";
-import paymentRouter from "./routes/payment.route.js";
+import userRouter from "./routes/user.routes.js";
+import healthCheckRouter from "./routes/healthCheck.routes.js";
+import bookingRouter from "./routes/booking.routes.js";
+import paymentRouter from "./routes/payment.routes.js";
+import busRouteMapRouter from "./routes/busRouteMap.routes.js";
 
 const app = express();
 
@@ -33,6 +34,7 @@ app.use("/api/v1/healthcheck", healthCheckRouter);
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/booking", bookingRouter);
 app.use("/api/v1/payment", paymentRouter);
+app.use("/api/v1/routemap", busRouteMapRouter);
 
 // Handle 404 errors
 app.all("*", (req, res) => {
