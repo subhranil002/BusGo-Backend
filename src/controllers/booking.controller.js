@@ -9,12 +9,12 @@ import { sendEmail } from "../utils/sendMail.js";
 export const createBooking = asyncHandler(async (req, res, next) => {
     try {
         // Get booking details from request
-        const { conductor, routeID, from, to, price, headCount } = req.body;
+        const { conductorID, routeID, from, to, price, headCount } = req.body;
         const passenger = req.user._id;
 
         // Validate input fields
         if (
-            !conductor ||
+            !conductorID ||
             !passenger ||
             !routeID ||
             !from ||
@@ -26,8 +26,8 @@ export const createBooking = asyncHandler(async (req, res, next) => {
         }
 
         // Validate conductor
-        const isConductor = await User.findById(conductor).select("role");
-        if (isConductor?.role !== "CONDUCTOR") {
+        const isConductor = await User.findById(conductorID).select("role");
+        if (!isConductor || isConductor?.role !== "CONDUCTOR") {
             throw new ApiError("Invalid conductor", 400);
         }
 
@@ -39,7 +39,7 @@ export const createBooking = asyncHandler(async (req, res, next) => {
 
         // Create booking
         const newBooking = await Booking.create({
-            conductor,
+            conductorID: "isConductor._id",
             passenger,
             routeID,
             from,

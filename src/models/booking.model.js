@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const bookingSchema = new mongoose.Schema(
     {
-        conductor: {
+        conductorID: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
             required: [true, "Conductor is required"],
