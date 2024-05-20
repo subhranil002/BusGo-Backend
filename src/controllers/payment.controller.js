@@ -5,6 +5,7 @@ import ApiError from "../utils/ApiError.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import crypto from "crypto";
+import { BusRouteMap } from "../models/busRouteMap.model.js";
 
 export const getApiKey = asyncHandler(async (req, res) => {
     try {
@@ -18,6 +19,51 @@ export const getApiKey = asyncHandler(async (req, res) => {
         return next(
             new ApiError(
                 `payment.controller :: getApiKey :: ${error}`,
+                error.statusCode
+            )
+        );
+    }
+});
+
+export const calculatePrice = asyncHandler(async (req, res, next) => {
+    try {
+        // Get route details
+        const { routeID, startStopNumber, endStopNumber, headCount } = req.body;
+
+        // Validate input fields
+        if (!routeID || !startStopNumber || !endStopNumber || !headCount) {
+            new ApiError("All fields are required", 400);
+        }
+
+        // Get route details
+        const route = await BusRouteMap.findOne({ routeID });
+        if (!route) {
+            new ApiError("Route not found", 404);
+        }
+
+        // Calculate total price
+        const distance = Math.round(
+            Math.abs(
+                route.stops[startStopNumber - 1].distanceFromOrigin -
+                    route.stops[endStopNumber - 1].distanceFromOrigin
+            )
+        );
+        const routePrice = Math.max(
+            route.farePerKm * distance,
+            route.minimumFare
+        );
+        const totalPrice = routePrice * headCount;
+
+        // Send response
+        return res.status(200).json(
+            new ApiResponse("Total price calculated successfully", {
+                amount: totalPrice
+            })
+        );
+    } catch (error) {
+        return next(
+            new ApiError(
+                `payment.controller :: calculatePrice :: ${error}`,
                 error.statusCode
             )
         );
@@ -50,9 +96,9 @@ export const createPayment = asyncHandler(async (req, res, next) => {
         // Add orderId to database
         await Payment.create({
             razorpay_order_id: order.id,
-            amount: order.amount,
+            amount: order.amount / 100,
             currency: order.currency,
-            status: order.status
+            status: "CREATED"
         });
 
         // Send response
@@ -82,19 +128,11 @@ export const verifyPayment = asyncHandler(async (req, res, next) => {
 
         // Find order_id in database
         const payment = await Payment.findOne({
-            razorpay_order_id
+            razorpay_order_id,
+            status: "CREATED"
         });
         if (!payment) {
             throw new ApiError("Invalid payment details", 400);
-        }
-
-        // Check if order is paid or failed or canceled
-        if (payment.status === "paid") {
-            throw new ApiError("Already paid", 400);
-        } else if (payment.status === "failed") {
-            throw new ApiError("Payment failed, create a new payment", 400);
-        } else if (payment.status === "canceled") {
-            throw new ApiError("Payment canceled, create a new payment", 400);
         }
 
         // Generate signature
@@ -105,14 +143,12 @@ export const verifyPayment = asyncHandler(async (req, res, next) => {
 
         // Check if signature matches
         if (generatedSignature !== razorpay_signature) {
-            payment.status = "failed";
-            await payment.save();
             throw new ApiError("Invalid payment details", 400);
         }
 
         // Save payment details to database
         payment.rozorpay_payment_id = razorpay_payment_id;
-        payment.status = "paid";
+        payment.status = "PAID";
         payment.rozorpay_signature = razorpay_signature;
         await payment.save();
 
@@ -137,14 +173,15 @@ export const cancelPayment = asyncHandler(async (req, res, next) => {
 
         // Find order_id in database
         const payment = await Payment.findOne({
-            razorpay_order_id
+            razorpay_order_id,
+            status: "CREATED"
         });
         if (!payment) {
             throw new ApiError("Invalid payment details", 400);
         }
 
         // Update payment status
-        payment.status = "canceled";
+        payment.status = "CANCELED";
         await payment.save();
 
         // Send response
