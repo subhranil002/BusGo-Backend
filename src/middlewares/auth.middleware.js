@@ -5,53 +5,48 @@ import constants from "../constants.js";
 import { User } from "../models/user.model.js";
 
 // Middleware to check if user is logged in
-export const isLoggedIn = asyncHandler(async (req, res, next) => {
+export const isLoggedIn = async (req, res, next) => {
     try {
-        // Retrieve access token from cookies or authorization header
-        const authorizationHeader = req.headers?.authorization;
-        const accessToken =
-            req.cookies?.accessToken ||
-            (authorizationHeader ? authorizationHeader.split(" ")[1] : null);
-
-        // Validate access token
+        // Get access token from request
+        const accessToken = req.cookies?.accessToken;
         if (!accessToken) {
-            throw new ApiError("Unauthorized request, please login again", 401);
+            throw new ApiError("Access token not found", 401);
         }
 
-        // Verify access token
-        let decodedToken;
-        try {
-            decodedToken = jwt.verify(
-                accessToken,
-                constants.ACCESS_TOKEN_SECRET
-            );
-            if (!decodedToken?._id) {
-                throw new ApiError("Invalid or expired access token", 401);
+        // Check if access token is valid
+        const decodedAccessToken = jwt.verify(
+            accessToken,
+            constants.ACCESS_TOKEN_SECRET,
+            (err, decoded) => {
+                if (err) {
+                    throw new ApiError(
+                        "Access token is expired",
+                        401
+                    );
+                }
+                return decoded;
             }
-        } catch (error) {
-            throw new ApiError("Invalid or expired access token", 401);
-        }
+        );
 
-        // Find user by id
-        const user = await User.findById(decodedToken._id);
+        // Check if user is verified
+        const user = await User.findById(decodedAccessToken?._id);
         if (!user) {
-            throw new ApiError("Unauthorized request, please login again", 401);
+            throw new ApiError("User not found", 401);
         }
 
-        // Attach user details to request
-        req.user = decodedToken;
+        // Set user in request
+        req.user = user;
 
-        // Proceed to next
         next();
     } catch (error) {
         return next(
             new ApiError(
-                `auth.middleware :: isLoggedIn :: ${error}`,
+                `auth.middleware :: isLoggedIn: ${error}`,
                 error.statusCode
             )
         );
     }
-});
+};
 
 export const authorizedRoles =
     (...roles) =>
@@ -75,3 +70,22 @@ export const authorizedRoles =
             );
         }
     };
+
+export const isVerified = async (req, res, next) => {
+    try {
+        // Check if user is verified
+        if (!req.user.isVerified) {
+            console.log(req.user);
+            throw new ApiError(`${req.user.role} is not verified`, 401);
+        }
+
+        next();
+    } catch (error) {
+        return next(
+            new ApiError(
+                `auth.middleware :: isVerified: ${error}`,
+                error.statusCode
+            )
+        );
+    }
+};
