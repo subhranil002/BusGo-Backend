@@ -60,8 +60,8 @@ const userSchema = new mongoose.Schema(
         role: {
             type: String,
             required: [true, "Role is required"],
-            enum: ["conductor", "passenger", "admin"],
-            default: "passenger"
+            enum: ["CONDUCTOR", "PASSENGER", "ADMIN"],
+            default: "PASSENGER"
         },
         bookingHistory: [
             {
@@ -78,6 +78,10 @@ const userSchema = new mongoose.Schema(
         refreshToken: {
             type: String,
             default: null,
+        },
+        isVerified: {
+            type: Boolean,
+            default: false
         }
     },
     {
@@ -104,9 +108,8 @@ userSchema.methods = {
         return jwt.sign(
             {
                 _id: this._id,
-                email: this.email,
-                name: this.name,
-                role: this.role
+                role: this.role,
+                isVerified: this.isVerified
             },
             constants.ACCESS_TOKEN_SECRET,
             {
