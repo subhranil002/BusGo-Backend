@@ -8,7 +8,7 @@ const bookingSchema = new mongoose.Schema(
             required: [true, "Conductor is required"],
             trim: true
         },
-        passenger: {
+        passengerID: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
             required: [true, "Passenger is required"],
@@ -44,6 +44,12 @@ const bookingSchema = new mongoose.Schema(
             required: [true, "Head count is required"],
             min: 0,
             max: 10
+        },
+        bookingTime: {
+            type: String,
+            required: [true, "Booking time is required"],
+            trim: true,
+            maxlength: [50, "Booking time can't be more than 50 characters"]
         }
     },
     {
