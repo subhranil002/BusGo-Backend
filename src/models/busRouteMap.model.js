@@ -43,19 +43,23 @@ const busRouteMapSchema = new mongoose.Schema({
                 type: Number,
                 required: [true, "Time taken from start is required"],
                 min: 0
-            },
+            }
         }
     ],
-    farePerKm: {
-        type: Number,
-        required: [true, "Fare per km is required"],
-        min: 0
-    },
-    minimumFare: {
-        type: Number,
-        required: [true, "Minimum fare is required"],
-        min: 0
-    }
+    fareChart: [
+        {
+            kmUpperLimit: {
+                type: Number,
+                required: [true, "Km upper limit is required"],
+                min: 1
+            },
+            fare: {
+                type: Number,
+                required: [true, "Fare is required"],
+                min: 0
+            }
+        }
+    ]
 });
 
 export const BusRouteMap = mongoose.model("BusRouteMap", busRouteMapSchema);
