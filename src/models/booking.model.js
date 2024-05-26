@@ -50,6 +50,10 @@ const bookingSchema = new mongoose.Schema(
             required: [true, "Booking time is required"],
             trim: true,
             maxlength: [50, "Booking time can't be more than 50 characters"]
+        },
+        isVerified: {
+            type: Boolean,
+            default: false
         }
     },
     {
