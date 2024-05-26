@@ -1,5 +1,6 @@
 import { User } from "../models/user.model.js";
 import { Otp } from "../models/otp.model.js";
+import { Booking } from "../models/booking.model.js";
 import ApiError from "../utils/ApiError.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiResponse from "../utils/ApiResponse.js";
@@ -122,14 +123,27 @@ export const register = asyncHandler(async (req, res, next) => {
         const newUser = await User.create({
             name,
             email,
-            password
+            password,
+            isVerified: true
         });
 
         // Check if conductor
         if (role === "CONDUCTOR") {
+            // Check if busNumber and routeID combination is unique
+            const busExists = await User.findOne({
+                busNumber,
+                routeID
+            });
+            if (busExists) {
+                throw new ApiError(
+                    "BusNumber and routeID combination already exists",
+                    400
+                );
+            }
             newUser.busNumber = busNumber;
             newUser.routeID = routeID;
             newUser.role = role;
+            newUser.isVerified = false;
         }
         await newUser.save();
 
@@ -146,7 +160,10 @@ export const register = asyncHandler(async (req, res, next) => {
         return res
             .status(200)
             .json(
-                new ApiResponse("User created successfully, Please login", {})
+                new ApiResponse(
+                    `${role ? role : "User"} created successfully, Please login`,
+                    {}
+                )
             );
     } catch (error) {
         return next(
@@ -439,10 +456,12 @@ export const refreshAccessToken = asyncHandler(async (req, res, next) => {
             .status(200)
             .cookie("accessToken", accessToken, cookieOptions)
             .cookie("refreshToken", refreshToken, cookieOptions)
-            .json(new ApiResponse("Access token refreshed successfully", {
-                accessToken,
-                refreshToken
-            }));
+            .json(
+                new ApiResponse("Access token refreshed successfully", {
+                    accessToken,
+                    refreshToken
+                })
+            );
     } catch (error) {
         return next(
             new ApiError(
@@ -477,6 +496,44 @@ export const deleteUser = asyncHandler(async (req, res, next) => {
         return next(
             new ApiError(
                 `user.controller :: deleteUser :: ${error}`,
+                error.statusCode
+            )
+        );
+    }
+});
+
+export const verifyConductor = asyncHandler(async (req, res, next) => {
+    try {
+        const { email, busNumber, routeID } = req.body;
+
+        // Validate input
+        if (!email || !busNumber || !routeID) {
+            throw new ApiError("All fields are required", 400);
+        }
+
+        // Find user
+        const user = await User.findOne({ email, busNumber, routeID });
+        if (!user) {
+            throw new ApiError("User not found", 404);
+        }
+
+        // Check if user is conductor
+        if (user.role !== "CONDUCTOR") {
+            throw new ApiError("User is not a conductor", 400);
+        }
+
+        // Verify Conductor
+        user.isVerified = true;
+        await user.save();
+
+        // Send response
+        return res
+            .status(200)
+            .json(new ApiResponse("Conductor verified successfully", {}));
+    } catch (error) {
+        return next(
+            new ApiError(
+                `user.controller :: verifyConductor :: ${error}`,
                 error.statusCode
             )
         );
