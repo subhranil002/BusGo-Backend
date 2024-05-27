@@ -1,4 +1,5 @@
 import { BusRouteMap } from "../models/busRouteMap.model.js";
+import { User } from "../models/user.model.js";
 import ApiError from "../utils/ApiError.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiResponse from "../utils/ApiResponse.js";
@@ -6,15 +7,23 @@ import ApiResponse from "../utils/ApiResponse.js";
 export const addRouteMap = asyncHandler(async (req, res, next) => {
     try {
         // Get route map details from request
-        const { routeID, origin, destination, stops } = req.body;
+        const { routeID, origin, destination, stops, fareChart } = req.body;
 
         // Validate input fields
-        if (!routeID || !origin || !destination || !stops.length) {
+        if (
+            !routeID ||
+            !origin ||
+            !destination ||
+            !Array.isArray(stops) ||
+            !stops.length ||
+            !Array.isArray(fareChart) ||
+            !fareChart.length
+        ) {
             throw new ApiError("All fields are required", 400);
         }
         if (routeID.length < 2 || routeID.length > 10) {
             throw new ApiError(
-                "Route ID must be between 3 and 15 characters",
+                "Route ID must be between 2 and 10 characters",
                 400
             );
         }
@@ -22,10 +31,10 @@ export const addRouteMap = asyncHandler(async (req, res, next) => {
         // Validate stops
         stops.map(stop => {
             if (
-                !stop.stopNumber ||
+                typeof stop.stopNumber !== "number" ||
                 !stop.name ||
-                !stop.distanceFromOrigin ||
-                !stop.timetakenFromOrigin
+                typeof stop.distanceFromOrigin !== "number" ||
+                typeof stop.timetakenFromOrigin !== "number"
             ) {
                 throw new ApiError("All stop fields are required", 400);
             }
@@ -49,12 +58,47 @@ export const addRouteMap = asyncHandler(async (req, res, next) => {
             }
         });
 
+        // Validate fare chart
+        fareChart.map(fare => {
+            if (
+                typeof fare.kmUpperLimit !== "number" ||
+                typeof fare.fare !== "number"
+            ) {
+                throw new ApiError("All fare chart fields are required", 400);
+            }
+            if (fare.kmUpperLimit < 0) {
+                throw new ApiError(
+                    "Km upper limit must be a positive number",
+                    400
+                );
+            }
+            if (fare.fare < 0) {
+                throw new ApiError("Fare must be a positive number", 400);
+            }
+        });
+        if (
+            fareChart[fareChart.length - 1].kmUpperLimit <
+            stops[stops.length - 1].distanceFromOrigin
+        ) {
+            throw new ApiError(
+                "Fare chart maximum kmUpperLimit must be greater than the maximum distance between origin and destination",
+                400
+            );
+        }
+
+        // If Route ID already exists
+        const isRouteIDExists = await BusRouteMap.findOne({ routeID });
+        if (isRouteIDExists) {
+            throw new ApiError("Route ID already exists", 400);
+        }
+
         // Create new route map
-        const routeMap = new BusRouteMap.create({
+        const routeMap = await BusRouteMap.create({
             routeID,
             origin,
             destination,
-            stops
+            stops,
+            fareChart
         });
 
         // Send response
@@ -88,7 +132,9 @@ export const getRouteMap = asyncHandler(async (req, res, next) => {
         }
 
         // Get route map
-        const routeMap = await BusRouteMap.findOne({ routeID });
+        const routeMap = await BusRouteMap.findOne({ routeID }).select(
+            "-fareChart"
+        );
         if (!routeMap) {
             throw new ApiError("Route map not found", 404);
         }
@@ -130,20 +176,20 @@ export const updateRouteMap = asyncHandler(async (req, res, next) => {
         }
 
         // Get route map details from request
-        const { origin, destination, stops } = req.body;
+        const { origin, destination, stops, fareChart } = req.body;
 
         // Validate input fields
-        if (!origin || !destination || !stops.length) {
+        if (!origin || !destination || !stops.length || !fareChart.length) {
             throw new ApiError("All fields are required", 400);
         }
 
         // Validate stops
         stops.map(stop => {
             if (
-                !stop.stopNumber ||
+                typeof stop.stopNumber !== "number" ||
                 !stop.name ||
-                !stop.distanceFromOrigin ||
-                !stop.timetakenFromOrigin
+                typeof stop.distanceFromOrigin !== "number" ||
+                typeof stop.timetakenFromOrigin !== "number"
             ) {
                 throw new ApiError("All stop fields are required", 400);
             }
@@ -167,12 +213,45 @@ export const updateRouteMap = asyncHandler(async (req, res, next) => {
             }
         });
 
-        // Update route map
-        const updatedRouteMap = await routeMap.update({
-            origin,
-            destination,
-            stops
+        // Validate fare chart
+        fareChart.map(fare => {
+            if (
+                typeof fare.kmUpperLimit !== "number" ||
+                typeof fare.fare !== "number"
+            ) {
+                throw new ApiError("All fare chart fields are required", 400);
+            }
+            if (fare.kmUpperLimit < 0) {
+                throw new ApiError(
+                    "Km upper limit must be a positive number",
+                    400
+                );
+            }
+            if (fare.fare < 0) {
+                throw new ApiError("Fare must be a positive number", 400);
+            }
         });
+        if (
+            fareChart[fareChart.length - 1].kmUpperLimit <
+            stops[stops.length - 1].distanceFromOrigin
+        ) {
+            throw new ApiError(
+                "Fare chart maximum kmUpperLimit must be greater than the maximum distance between origin and destination",
+                400
+            );
+        }
+
+        // Update route map
+        const updatedRouteMap = await BusRouteMap.findOneAndUpdate(
+            { routeID },
+            {
+                origin,
+                destination,
+                stops,
+                fareChart
+            },
+            { new: true }
+        );
         if (!updatedRouteMap) {
             throw new ApiError("Error while updating route map", 400);
         }
