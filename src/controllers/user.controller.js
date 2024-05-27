@@ -267,7 +267,7 @@ export const getCurrentUser = asyncHandler(async (req, res, next) => {
     try {
         // Get user details
         const user = await User.findById(req.user._id).select(
-            "-password -bookingHistory -sellingHistory -refreshToken"
+            "-password -refreshToken"
         );
 
         // Send response
