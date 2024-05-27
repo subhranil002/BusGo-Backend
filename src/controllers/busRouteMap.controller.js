@@ -305,3 +305,51 @@ export const deleteRouteMap = asyncHandler(async (req, res, next) => {
         );
     }
 });
+
+export const getBusByRoute = asyncHandler(async (req, res, next) => {
+    try {
+        // Get routeID from params
+        const { routeID } = req.params;
+
+        // Validate input field
+        if (!routeID) {
+            throw new ApiError("Route ID is required", 400);
+        }
+        if (routeID.length < 2 || routeID.length > 10) {
+            throw new ApiError(
+                "Route ID must be between 3 and 15 characters",
+                400
+            );
+        }
+
+        // Get buses by route
+        const busNumbers = await User.aggregate([
+            {
+                $match: {
+                    routeID: routeID
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    busNumber: 1
+                }
+            }
+        ]);
+        if (!busNumbers.length) {
+            throw new ApiError("No buses found", 404);
+        }
+
+        // Send response
+        return res
+            .status(200)
+            .json(new ApiResponse("Buses retrieved", busNumbers));
+    } catch (error) {
+        return next(
+            new ApiError(
+                `busRoute.controller :: getBusByRoute :: ${error}`,
+                error.statusCode
+            )
+        );
+    }
+});
