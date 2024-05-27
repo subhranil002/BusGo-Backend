@@ -63,18 +63,6 @@ const userSchema = new mongoose.Schema(
             enum: ["CONDUCTOR", "PASSENGER", "ADMIN"],
             default: "PASSENGER"
         },
-        bookingHistory: [
-            {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: "Booking"
-            }
-        ],
-        sellingHistory: [
-            {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: "Booking"
-            }
-        ],
         refreshToken: {
             type: String,
             default: null,
