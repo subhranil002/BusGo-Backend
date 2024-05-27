@@ -1,17 +1,31 @@
 import {
     addRouteMap,
     deleteRouteMap,
+    getBusByRoute,
     getRouteMap,
     updateRouteMap
 } from "../controllers/busRouteMap.controller.js";
 import { Router } from "express";
-import {} from "../middlewares/auth.middleware.js";
+import {
+    authorizedRoles,
+    isLoggedIn,
+    isVerified
+} from "../middlewares/auth.middleware.js";
 
 const busRouteMapRouter = Router();
 
-busRouteMapRouter.route("/add").post(addRouteMap);
-busRouteMapRouter.route("/get/:routeID").get(getRouteMap);
-busRouteMapRouter.route("/update/:routeID").put(updateRouteMap);
-busRouteMapRouter.route("/delete/:routeID").delete(deleteRouteMap);
+busRouteMapRouter
+    .route("/add")
+    .post(isLoggedIn, isVerified, authorizedRoles("ADMIN"), addRouteMap);
+busRouteMapRouter
+    .route("/get-stops/:routeID")
+    .get(isLoggedIn, isVerified, getRouteMap);
+busRouteMapRouter
+    .route("/update/:routeID")
+    .put(isLoggedIn, isVerified, authorizedRoles("ADMIN"), updateRouteMap);
+busRouteMapRouter
+    .route("/delete/:routeID")
+    .delete(isLoggedIn, isVerified, authorizedRoles("ADMIN"), deleteRouteMap);
+busRouteMapRouter.route("/get-buses/:routeID").get(isLoggedIn, isVerified, getBusByRoute);
 
 export default busRouteMapRouter;
