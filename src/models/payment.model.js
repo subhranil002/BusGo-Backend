@@ -5,12 +5,10 @@ const paymentSchema = new mongoose.Schema(
         razorpay_order_id: {
             type: String,
             required: true,
-            unique: true,
             trim: true
         },
         rozorpay_payment_id: {
             type: String,
-            unique: true,
             trim: true
         },
         amount: {
@@ -29,7 +27,6 @@ const paymentSchema = new mongoose.Schema(
         },
         rozorpay_signature: {
             type: String,
-            unique: true,
             trim: true
         }
     },

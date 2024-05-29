@@ -41,23 +41,40 @@ export const calculatePrice = asyncHandler(async (req, res, next) => {
             new ApiError("Route not found", 404);
         }
 
-        // Calculate total price
-        const distance = Math.round(
-            Math.abs(
-                route.stops[startStopNumber - 1].distanceFromOrigin -
-                    route.stops[endStopNumber - 1].distanceFromOrigin
-            )
-        );
-        const routePrice = Math.max(
-            route.farePerKm * distance,
-            route.minimumFare
-        );
-        const totalPrice = routePrice * headCount;
+        // Calculate total price and time
+        let distance = 0;
+        let fare = 0;
+        let totalPrice = 0;
+        let totalTime = 0;
+        try {
+            distance = Math.round(
+                Math.abs(
+                    route.stops[startStopNumber - 1].distanceFromOrigin -
+                        route.stops[endStopNumber - 1].distanceFromOrigin
+                )
+            );
+            fare = route.fareChart.find(
+                fare => distance <= fare.kmUpperLimit
+            ).fare;
+            totalPrice = fare * headCount;
+            totalTime = Math.abs(
+                route.stops[startStopNumber - 1].timetakenFromOrigin -
+                    route.stops[endStopNumber - 1].timetakenFromOrigin
+            );
+        } catch (error) {
+            throw new ApiError("Stop number is invalid", 400);
+        }
 
         // Send response
         return res.status(200).json(
             new ApiResponse("Total price calculated successfully", {
-                amount: totalPrice
+                From: route.stops[startStopNumber - 1],
+                To: route.stops[endStopNumber - 1],
+                distanceInKm: distance,
+                timeInMinutes: totalTime,
+                farePerHead: fare,
+                headCount,
+                totalPrice
             })
         );
     } catch (error) {
@@ -104,7 +121,9 @@ export const createPayment = asyncHandler(async (req, res, next) => {
         // Send response
         return res
             .status(200)
-            .json(new ApiResponse("Payment created successfully", order));
+            .json(new ApiResponse("Payment created successfully", {
+                orderId: order.id,
+            }));
     } catch (error) {
         return next(
             new ApiError(
