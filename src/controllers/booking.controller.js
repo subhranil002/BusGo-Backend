@@ -219,3 +219,133 @@ export const getTicket = asyncHandler(async (req, res, next) => {
         );
     }
 });
+
+export const getSellingHistory = asyncHandler(async (req, res, next) => {
+    try {
+        // Get date range from query
+        const { from, to } = req.query;
+
+        // Validate date range
+        if (!from || !to) {
+            throw new ApiError("Date range is required", 400);
+        }
+        if (
+            !/^\d{4}-\d{2}-\d{2}$/.test(from) ||
+            !/^\d{4}-\d{2}-\d{2}$/.test(to)
+        ) {
+            throw new ApiError("Invalid date format", 400);
+        }
+        if (new Date(from) > new Date(to)) {
+            throw new ApiError("'From' date must be before 'to' date", 400);
+        }
+
+        // Fetch tickets
+        const tickets = await Booking.aggregate([
+            {
+                $match: {
+                    conductorID: req.user._id
+                }
+            },
+            {
+                $match: {
+                    bookingTime: {
+                        $gte: formatInTimeZone(
+                            startOfDay(new Date(from)),
+                            "Asia/Kolkata",
+                            "yyyy-MM-dd HH:mm:ss"
+                        ),
+                        $lte: formatInTimeZone(
+                            endOfDay(new Date(to)),
+                            "Asia/Kolkata",
+                            "yyyy-MM-dd HH:mm:ss"
+                        )
+                    }
+                }
+            },
+            {
+                $project: {
+                    conductorID: 0,
+                    passengerID: 0,
+                    routeID: 0,
+                    createdAt: 0,
+                    updatedAt: 0,
+                    __v: 0
+                }
+            },
+            {
+                $sort: {
+                    bookingTime: 1
+                }
+            }
+        ]);
+
+        // Check if tickets exist
+        if (!tickets.length) {
+            return res
+                .status(200)
+                .json(new ApiResponse("No tickets sold today", []));
+        }
+
+        // Send response
+        return res
+            .status(200)
+            .json(
+                new ApiResponse(
+                    "Today's sold tickets fetched successfully",
+                    tickets
+                )
+            );
+    } catch (error) {
+        return next(
+            new ApiError(
+                `booking.controller :: getSellingHistory :: ${error}`,
+                error.statusCode
+            )
+        );
+    }
+});
+
+export const verifyTicket = asyncHandler(async (req, res, next) => {
+    try {
+        // Get ticket ID from params
+        const ticketID = req.params.ticketID;
+
+        // Validate ticket ID
+        if (!ticketID) {
+            throw new ApiError("Ticket ID is required", 400);
+        }
+
+        // Find ticket
+        const ticket = await Booking.findById(ticketID);
+
+        // Check if ticket exists
+        if (!ticket) {
+            throw new ApiError("Ticket not found", 404);
+        } else if (
+            req.user.role !== "ADMIN" &&
+            ticket.passengerID.toString() !== req.user._id.toString() &&
+            ticket.conductorID.toString() !== req.user._id.toString()
+        ) {
+            throw new ApiError(
+                `${req.user.role} is not authorized to view ticket`,
+                401
+            );
+        }
+
+        // Verify ticket
+        ticket.isVerified = true;
+        await ticket.save();
+
+        // Send response
+        return res
+            .status(200)
+            .json(new ApiResponse("Ticket verified successfully", {}));
+    } catch (error) {
+        return next(
+            new ApiError(
+                `booking.controller :: verifyTicket :: ${error}`,
+                error.statusCode
+            )
+        );
+    }
+});
