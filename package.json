@@ -13,7 +13,7 @@
         "url": "git+https://github.com/subhranil002/BusGo-Backend.git"
     },
     "author": "Subhranil Chakraborty",
-    "license": "MIT",
+    "license": "GPL-3.0-only",
     "bugs": {
         "url": "https://github.com/subhranil002/BusGo-Backend/issues"
     },
